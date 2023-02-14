@@ -1,17 +1,16 @@
-import { View } from 'react-native';
-import { useEffect } from 'react';
-import { Button, Text, useTheme } from 'react-native-paper'
+import { View } from 'react-native'
+import { Text, useTheme } from 'react-native-paper'
 
 export const SupermarketPage = ({ navigation, route }) => {
-    const theme = useTheme()
+	const theme = useTheme()
 
-    // useEffect(() => {
-    //     console.log('Search supermarket with name:', params.name)
-    // }, [params.name])
+	// useEffect(() => {
+	//     console.log('Search supermarket with name:', params.name)
+	// }, [params.name])
 
-    return(
-        <View>
-            <Text theme={theme}>{route.params.name} Page</Text>
-        </View>
-    )
+	return (
+		<View>
+			<Text theme={theme}>{route.params.name} Page</Text>
+		</View>
+	)
 }
