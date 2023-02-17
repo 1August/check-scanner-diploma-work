@@ -1,6 +1,7 @@
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native'
 import { Text, useTheme } from 'react-native-paper'
 import { useDispatch, useSelector } from 'react-redux'
+import { QRScanner } from '../../components/QRScanner/QRScanner'
 
 export const SignupPage = () => {
 
@@ -48,7 +49,11 @@ export const SignupPage = () => {
 
 	const theme = useTheme()
 
-	const s = StyleSheet.create({})
+	const s = StyleSheet.create({
+		signupPage: {
+			marginTop: StatusBar.currentHeight
+		}
+	})
 
 	return (
 		<View style={s.signupPage}>
@@ -56,6 +61,7 @@ export const SignupPage = () => {
 				<View style={s.container}>
 					<Text theme={theme}>Register page</Text>
 				</View>
+
 			</ScrollView>
 		</View>
 	)

@@ -13,12 +13,13 @@ export const HomePage = ({ navigation, route }) => {
 
 			backgroundColor: theme.colors.background,
 
-			paddingTop: StatusBar.currentHeight + 16,
+			paddingTop: StatusBar.currentHeight,
 			paddingBottom: 16,
 		},
 		container: {
 			flex: 1,
 			paddingHorizontal: 16,
+			paddingTop: 16,
 		},
 		header1: {
 			fontSize: 16,

@@ -1,6 +1,4 @@
 import { AppRegistry, Dimensions, StatusBar, StyleSheet, View } from 'react-native'
-import { SignupPage } from './src/pages/SignupPage/SignupPage'
-import { SigninPage } from './src/pages/SigninPage/SigninPage'
 import { Provider } from 'react-redux'
 import { store } from './src/redux/store'
 import {
@@ -12,6 +10,8 @@ import { useEffect, useState } from 'react'
 import { HomeStackPage } from './src/pages/HomeStackPage/HomeStackPage'
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
+import { QRScannerPage } from './src/pages/QRScannerPage/QRScannerPage'
+import { AccountStackPage } from './src/pages/AccountStackPage/AccountStackPage'
 
 const lightTheme = {
 	...DefaultTheme,
@@ -31,7 +31,6 @@ const darkTheme = {
 	},
 }
 
-
 /**
  * In iOS devices, screenHeight === windowHeight.
  * In Android devices with bottom navigator bar, screen height === windowHeight + statusBarHeight +
@@ -42,23 +41,9 @@ const SCREEN_HEIGHT = Dimensions.get('screen').height
 const WINDOW_HEIGHT = Dimensions.get('window').height
 const BOTTOM_NAVIGATION_BAR_HEIGHT = SCREEN_HEIGHT - WINDOW_HEIGHT - StatusBar.currentHeight
 
-
 export default function App() {
-	const [isDarkTheme, setIsDarkTheme] = useState(true)
+	const [isDarkTheme, setIsDarkTheme] = useState(false)
 	const [theme, setTheme] = useState(darkTheme)
-
-	// const [index, setIndex] = useState(0)
-	// const routes = [
-	//     { key: 'home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home' },
-	//     { key: 'signin', title: 'Login', focusedIcon: 'close', unfocusedIcon: 'close' },
-	//     { key: 'signup', title: 'Register', focusedIcon: 'close', unfocusedIcon: 'close' },
-	// ]
-	//
-	// const renderScene = BottomNavigation.SceneMap({
-	//     home: HomeStackPage,
-	//     signin: SigninPage,
-	//     signup: SignupPage,
-	// })
 
 	useEffect(() => {
 		if (isDarkTheme) {
@@ -74,7 +59,6 @@ export default function App() {
 		},
 	})
 
-
 	const Tab = createMaterialBottomTabNavigator()
 
 	return (
@@ -83,27 +67,19 @@ export default function App() {
 				<View style={s.app}>
 					<NavigationContainer theme={theme}>
 						<Tab.Navigator>
-							<Tab.Screen name={'Home'} component={HomeStackPage} options={{
-								tabBarIcon: 'home'
+							<Tab.Screen name={'HomeStackPage'} component={HomeStackPage} options={{
+								tabBarIcon: 'home',
+								title: 'Home'
 							}}/>
-							<Tab.Screen name={'SignUp'} component={SignupPage} options={{
-								tabBarIcon: 'close'
+							<Tab.Screen name={'QRScanner'} component={QRScannerPage} options={{
+								tabBarIcon: 'qrcode-scan',
+								title: 'QR Scan'
 							}}/>
-							<Tab.Screen name={'SignIn'} component={SigninPage} options={{
-								tabBarIcon: 'close'
+							<Tab.Screen name={'AccountStackPage'} component={AccountStackPage} options={{
+								tabBarIcon: 'account',
+								title: 'Account'
 							}}/>
-
-							{/*<Tab.Screen name={'Supermarket'} component={SupermarketPage} options={{*/}
-							{/*    tabBarBadge: false*/}
-							{/*}}/>*/}
 						</Tab.Navigator>
-
-						{/*<BottomNavigation*/}
-						{/*    navigationState={{ index, routes }}*/}
-						{/*    onIndexChange={setIndex}*/}
-						{/*    renderScene={renderScene}*/}
-						{/*    theme={theme}*/}
-						{/*/>*/}
 					</NavigationContainer>
 				</View>
 			</PaperProvider>

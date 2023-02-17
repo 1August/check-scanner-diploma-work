@@ -9,12 +9,12 @@ export const SigninPage = ({ navigation, route }) => {
 			flex: 1,
 
 			backgroundColor: theme.colors.background,
-			paddingVertical: 16,
-
+			// paddingVertical: 16,
 		},
 		container: {
 			flex: 1,
 			paddingHorizontal: 16,
+			// paddingTop: 16,
 			justifyContent: 'center',
 		},
 
@@ -58,7 +58,7 @@ export const SigninPage = ({ navigation, route }) => {
 	}
 
 	const handleGoRegisterPress = () => {
-		navigation.navigate('SignUp')
+		navigation.navigate('Signup')
 	}
 
 	return (
