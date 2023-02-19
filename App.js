@@ -2,6 +2,7 @@ import { AppRegistry, Dimensions, StatusBar, StyleSheet, View } from 'react-nati
 import { Provider } from 'react-redux'
 import { store } from './src/redux/store'
 import {
+	Appbar,
 	MD3DarkTheme as DarkTheme,
 	MD3LightTheme as DefaultTheme,
 	Provider as PaperProvider,
@@ -12,6 +13,7 @@ import { createMaterialBottomTabNavigator } from '@react-navigation/material-bot
 import { NavigationContainer } from '@react-navigation/native'
 import { QRScannerPage } from './src/pages/QRScannerPage/QRScannerPage'
 import { AccountStackPage } from './src/pages/AccountStackPage/AccountStackPage'
+import { AppBar } from '@mui/material'
 
 const lightTheme = {
 	...DefaultTheme,
@@ -42,7 +44,7 @@ const WINDOW_HEIGHT = Dimensions.get('window').height
 const BOTTOM_NAVIGATION_BAR_HEIGHT = SCREEN_HEIGHT - WINDOW_HEIGHT - StatusBar.currentHeight
 
 export default function App() {
-	const [isDarkTheme, setIsDarkTheme] = useState(false)
+	const [isDarkTheme, setIsDarkTheme] = useState(true)
 	const [theme, setTheme] = useState(darkTheme)
 
 	useEffect(() => {
@@ -75,7 +77,7 @@ export default function App() {
 								tabBarIcon: 'qrcode-scan',
 								title: 'QR Scan'
 							}}/>
-							<Tab.Screen name={'AccountStackPage'} component={AccountStackPage} options={{
+							<Tab.Screen children={() => <AccountStackPage setIsDarkTheme={setIsDarkTheme}/>} name={'AccountStackPage'} options={{
 								tabBarIcon: 'account',
 								title: 'Account'
 							}}/>
