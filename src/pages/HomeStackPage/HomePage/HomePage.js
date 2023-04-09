@@ -1,11 +1,16 @@
-import { ScrollView, StatusBar, StyleSheet, View } from 'react-native'
-import { Button, Card, Searchbar, Text, useTheme } from 'react-native-paper'
-import { useState } from 'react'
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native'
+import { Card, Searchbar, Text, useTheme } from 'react-native-paper'
+import { useEffect, useState } from 'react'
+import { BASE_URL } from '../../../../App'
+import axios from 'axios'
+import { Loading } from '../../Loading/Loading'
 
 export const HomePage = ({ navigation, route }) => {
 	const theme = useTheme()
 
 	const [searchQuery, setSearchQuery] = useState('')
+	const [products, setProducts] = useState([])
+	const [loading, setLoading] = useState(false)
 
 	const s = StyleSheet.create({
 		homePage: {
@@ -77,88 +82,34 @@ export const HomePage = ({ navigation, route }) => {
 		},
 	})
 
-	const markets = [
-		{
-			id: 1,
-			name: 'Small',
-			description: 'Lorem ipsum dolor sit amet.',
-		},
-		{
-			id: 2,
-			name: 'Galmart',
-			description: 'Lorem ipsum dolor sit amet.',
-		},
-		{
-			id: 3,
-			name: 'Magnum',
-			description: 'Lorem ipsum dolor sit amet.',
-		},
-	]
-	const products = [
-		{
-			id: 1,
-			name: 'Product 1',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 2,
-			name: 'Product 2',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 3,
-			name: 'Product 3',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 4,
-			name: 'Product 4',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 5,
-			name: 'Product 5',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 6,
-			name: 'Product 6',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 7,
-			name: 'Product 7',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 8,
-			name: 'Product 7',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 9,
-			name: 'Product 7',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 10,
-			name: 'Product 7',
-			description: 'lorem ipsum',
-		},
-		{
-			id: 11,
-			name: 'Product 7',
-			description: 'lorem ipsum',
-		},
-	]
+	// const markets = [
+	// 	{
+	// 		id: 1,
+	// 		name: 'Small',
+	// 		description: 'Lorem ipsum dolor sit amet.',
+	// 	},
+	// 	{
+	// 		id: 2,
+	// 		name: 'Galmart',
+	// 		description: 'Lorem ipsum dolor sit amet.',
+	// 	},
+	// 	{
+	// 		id: 3,
+	// 		name: 'Magnum',
+	// 		description: 'Lorem ipsum dolor sit amet.',
+	// 	},
+	// ]
 
-	const handleMarketPress = (market) => {
-		console.log(`Searching market ${market.id}. ${market.name}`)
-
-		navigation.navigate('Supermarket', {
-			name: market.name,
-		})
+	const handleSearch = () => {
+		navigation.navigate('SearchPage', { searchQuery })
 	}
+
+	// const handleMarketPress = (market) => {
+	// 	navigation.navigate('Supermarket', {
+	// 		id: market.id,
+	// 		name: market.name,
+	// 	})
+	// }
 
 	const handleProductPress = (product) => {
 		console.log(`Clicked product ${product.id}`)
@@ -166,45 +117,79 @@ export const HomePage = ({ navigation, route }) => {
 		navigation.navigate('Product', { ...product })
 	}
 
+	useEffect(() => {
+		if (!products.length) {
+			setLoading(true)
+			const url = `${BASE_URL}/api/data/top`
+
+			axios.get(url, {
+					headers: {
+						'Cache-Control': 'no-cache',
+						Pragma: 'no-cache',
+						Expires: '0',
+					},
+				})
+				.then(res => {
+					setProducts(res.data.data || [])
+				})
+				.finally(() => {
+					setLoading(false)
+				})
+		}
+	}, [products])
+
+	if (loading) return <Loading/>
 	return (
-		<View style={s.homePage}>
-			<ScrollView>
-				<View style={s.container}>
-					<Searchbar value={searchQuery} onChangeText={setSearchQuery} placeholder={'Search here'}
-						style={s.searchbar} clearIcon={'close'} theme={theme}
-					/>
-					<View style={s.markets}>
-						{
-							markets.map(market => (
-								<Card theme={theme} mode={'elevated'} onPress={() => handleMarketPress(market)}
-									key={market.id} style={s.market}>
-									<Card.Title theme={theme} title={market.name} subtitle={market.description}
-										right={() => <Button icon={'chevron-right'}/>}
-										subtitleNumberOfLines={1}
-									/>
-								</Card>
-							))
-						}
+		<SafeAreaView style={{ flex: 1 }}>
+			<View style={s.homePage}>
+				<ScrollView>
+					<View style={s.container}>
+						<Searchbar
+							value={searchQuery} onChangeText={setSearchQuery}
+							placeholder={'Search here'}
+							onSubmitEditing={handleSearch}
+							style={s.searchbar} clearIcon={'close'} theme={theme}
+						/>
+						{/*<View style={s.markets}>*/}
+						{/*{*/}
+						{/*	markets.map(market => (*/}
+						{/*		<Card*/}
+						{/*			theme={theme} mode={'elevated'} onPress={() => handleMarketPress(market)}*/}
+						{/*			key={market.id} style={s.market}*/}
+						{/*		>*/}
+						{/*			<Card.Title*/}
+						{/*				theme={theme} title={market.name} subtitle={market.description}*/}
+						{/*				right={() => <Button icon={'chevron-right'}/>}*/}
+						{/*				subtitleNumberOfLines={1}*/}
+						{/*			/>*/}
+						{/*		</Card>*/}
+						{/*	))*/}
+						{/*}*/}
+						{/*</View>*/}
+						<View style={s.products}>
+							{
+								products?.map(product => (
+									<Card
+										key={product.id}
+										style={s.product} theme={theme} onPress={() => handleProductPress(product)}
+									>
+										<Card.Cover
+											theme={{ roundness: 1 }}
+											source={{ uri: 'https://picsum.photos/700' }}
+										/>
+										<Card.Title title={product.name} theme={theme}/>
+										<Card.Content theme={theme}>
+											<Text theme={theme} style={{ marginBottom: 8 }}>
+												{product.price}
+											</Text>
+										</Card.Content>
+									</Card>
+								))
+							}
+						</View>
 					</View>
-					<View style={s.products}>
-						{
-							products.map(product => (
-								<Card style={s.product} theme={theme} onPress={() => handleProductPress(product)}
-									key={product.id}>
-									<Card.Cover theme={{ roundness: 1 }}
-										source={{ uri: 'https://picsum.photos/700' }}/>
-									<Card.Title title={product.name} theme={theme}/>
-									<Card.Content theme={theme}>
-										<Text theme={theme} style={{ marginBottom: 8 }}>
-											{product.description}
-										</Text>
-									</Card.Content>
-								</Card>
-							))
-						}
-					</View>
-				</View>
-			</ScrollView>
-		</View>
+				</ScrollView>
+			</View>
+		</SafeAreaView>
 	)
 }
