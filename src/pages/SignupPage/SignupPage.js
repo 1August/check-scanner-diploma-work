@@ -1,85 +1,121 @@
-import { ScrollView, StatusBar, StyleSheet, View } from 'react-native'
-import { Text, useTheme } from 'react-native-paper'
-import { useDispatch, useSelector } from 'react-redux'
-import { QRScanner } from '../../components/QRScanner/QRScanner'
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native'
+import { Button, Text, TextInput, useTheme } from 'react-native-paper'
+import { useState } from 'react'
+import { BASE_URL } from '../../../App'
+import axios from 'axios'
 
-export const SignupPage = () => {
+export const SignupPage = ({ navigation, route }) => {
+	const [userData, setUserData] = useState({ email: '', password: '' })
+	const [error, setError] = useState('')
+	const [loading, setLoading] = useState(false)
 
-	const { email, password } = useSelector(state => state.auth)
-	const dispatch = useDispatch()
+	const [secureTextEntry, setSecureTextEntry] = useState(true)
 
-	// const [userData, setUserData] = useState({
-	//     email: '',
-	//     password: '',
-	// })
+	const handleChangeData = (input) => {
+		setError('')
+		setUserData(prev => ({ ...prev, [input.name]: input.value }))
+	}
 
-	// const handleRegisterPress = (e) => {
-	//     e.preventDefault()
-	//
-	//     const url = `http://10.0.2.2:5000/api/auth/signup`
-	//     fetch(url, {
-	//         method: 'POST',
-	//         headers: { 'Content-Type': 'application/json' },
-	//         body: JSON.stringify({ email, password }),
-	//     })
-	//         .then(res => {
-	//             if (!res.ok) {
-	//                 throw new Error(`Response ended with status ${res.status}`)
-	//             }
-	//             return res.json()
-	//         })
-	//         .then(data => {
-	//             console.log('Success:', data);
-	//             navigate('/signin')
-	//         })
-	//         .catch(error => {
-	//             console.error('Error:', error);
-	//         });
-	// }
+	const handleRegisterPress = () => {
+		setLoading(true)
 
-	// const handleDataChange = (name) => (value) => {
-	//     dispatch(setCredentials(
-	//         {
-	//             [name]: value,
-	//         },
-	//     ))
-	//
-	//     // setUserData(prev => ({ ...prev, [name]: value }))
-	// }
+		const url = `${BASE_URL}/api/auth/signup`
+
+		axios.post(url, { ...userData })
+			.then(res => {
+				alert('User created!')
+				navigation.navigate('Signin')
+			}, err => {
+				setError(err.message)
+			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}
+
+	const handleSecureTextEntryPress = () => {
+		setSecureTextEntry(isSecure => !isSecure)
+	}
+
+	const handleGoLoginPress = () => {
+		navigation.navigate('Signin')
+	}
 
 	const theme = useTheme()
 
 	const s = StyleSheet.create({
 		signupPage: {
-			marginTop: StatusBar.currentHeight
-		}
+			flex: 1,
+
+			marginTop: StatusBar.currentHeight,
+		},
+		container: {
+			flex: 1,
+			paddingHorizontal: 16,
+			justifyContent: 'center',
+		},
+		inputs: {
+			marginBottom: 32,
+		},
+		input: {
+			marginBottom: 16,
+		},
+		registerBtns: {
+			marginBottom: 32,
+		},
 	})
 
 	return (
-		<View style={s.signupPage}>
-			<ScrollView>
-				<View style={s.container}>
-					<Text theme={theme}>Register page</Text>
-				</View>
-
-			</ScrollView>
-		</View>
+		<SafeAreaView style={{ flex: 1 }}>
+			<View style={s.signupPage}>
+				<ScrollView contentContainerStyle={{ flex: 1 }}>
+					<View style={s.container}>
+						<View style={s.inputs}>
+							{error && <Text style={{ color: 'red' }}>{error}</Text>}
+							<TextInput
+								value={userData.email}
+								onChangeText={email => handleChangeData({ name: 'email', value: email })}
+								style={s.input} theme={theme}
+								label={'Email'} placeholder={'Enter your email'}
+								left={<TextInput.Icon icon='email-outline'/>}
+								mode={'outlined'}
+							/>
+							<TextInput
+								value={userData.password}
+								onChangeText={password => handleChangeData({
+									name: 'password',
+									value: password,
+								})}
+								style={s.input} theme={theme}
+								label={'Password'}
+								placeholder={'Secret password'} secureTextEntry={secureTextEntry}
+								left={<TextInput.Icon icon='lock'/>}
+								right={<TextInput.Icon icon='eye' onPress={handleSecureTextEntryPress}/>}
+								mode={'outlined'}
+							/>
+						</View>
+						<View style={s.registerBtns}>
+							<View>
+								<Button
+									theme={theme} mode={'contained'}
+									onPress={handleRegisterPress}
+									disabled={loading}
+								>
+									{loading ? 'Loading' : 'Sign up'}
+								</Button>
+							</View>
+						</View>
+						<View>
+							<Text theme={theme} style={{ textAlign: 'center', marginBottom: 8 }}>
+								Already have an account?
+							</Text>
+							<Button onPress={handleGoLoginPress} theme={theme} mode={'outlined'}>
+								Log in
+							</Button>
+						</View>
+					</View>
+				</ScrollView>
+			</View>
+		</SafeAreaView>
 	)
-	// return (
-	//     <View style={s.signupPage}>
-	//         <View style={s.container}>
-	//             <Link to={'/'}><Text>Go home</Text></Link>
-	//             <View style={s.signupBody}>
-	//                 <Text style={s.signupHeader}>Sign Up</Text>
-	//                 <TextInput value={email} onChangeText={handleDataChange('email')} style={s.input}
-	//                            placeholder={'Email'}/>
-	//                 <TextInput value={password} onChangeText={handleDataChange('password')}
-	//                            secureTextEntry={true} style={s.input} placeholder={'Password'}/>
-	//                 <TouchableOpacity style={s.submitButton} onPress={handleRegisterPress}>
-	//                     <Text style={s.submitButtonText}>Submit</Text>
-	//                 </TouchableOpacity>
-	//             </View>
-	//         </View>
-	//     </View>
-	// )
 }

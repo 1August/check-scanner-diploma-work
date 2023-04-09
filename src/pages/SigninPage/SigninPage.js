@@ -1,11 +1,24 @@
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
 import { Button, Text, TextInput, useTheme } from 'react-native-paper'
 import { useState } from 'react'
+import jwt_decode from 'jwt-decode'
+import axios from 'axios'
+import { useDispatch, useSelector } from 'react-redux'
+import { loginSuccess } from '../../redux/slices/authSlice'
+import { BASE_URL } from '../../../App'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export const SigninPage = ({ navigation, route }) => {
 	const theme = useTheme()
 
+	const dispatch = useDispatch()
+	const token = useSelector(state => state.auth.token)
+
 	const [userData, setUserData] = useState({ email: '', password: '' })
+	const [error, setError] = useState('')
+	const [loading, setLoading] = useState(false)
+
+	const [secureTextEntry, setSecureTextEntry] = useState(true)
 
 	const s = StyleSheet.create({
 		signinPage: {
@@ -57,40 +70,38 @@ export const SigninPage = ({ navigation, route }) => {
 	})
 
 	const handleChangeData = (input) => {
+		setError('')
 		setUserData(prev => ({ ...prev, [input.name]: input.value }))
 	}
 
 	const handleLoginPress = () => {
-		console.log('Login press')
+		setLoading(true)
+		setError('')
 
-		const url = 'http://localhost:5000/api/auth/signin'
+		const url = `${BASE_URL}/api/auth/signin`
 
-		fetch(url, {
-			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ ...userData })
-		})
-			.then(res => res.json())
-			.then(data => {
-				console.log(data)
+		axios.post(url, { ...userData })
+			.then(async res => {
+				try {
+					const decoded = jwt_decode(res.data.data)
+					const auth = { id: decoded.userId, email: decoded.email, token: res.data.data }
+					await AsyncStorage.setItem('auth', JSON.stringify(auth))
+					dispatch(loginSuccess(auth))
+				} catch (error) {
+					console.log(error.message)
+					alert(error.message)
+				}
 			})
-			.catch(err => {
-				console.log(err)
+			.catch(error => {
+				setError(error.message)
 			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}
 
-
-		// axios.post(url, { ...userData })
-		// 	.then(res => {
-		// 		console.log('RES:', res.data)
-		//
-		// 		// const token = res.data.token
-		// 	})
-		// 	.catch(err => {
-		// 		console.log(err)
-		// 	})
+	const handleSecureTextEntryPress = () => {
+		setSecureTextEntry(isSecure => !isSecure)
 	}
 
 	const handleForgotPasswordPress = () => {
@@ -101,61 +112,73 @@ export const SigninPage = ({ navigation, route }) => {
 		navigation.navigate('Signup')
 	}
 
+	if (token) return navigation.popToTop()
 	return (
-		<View style={s.signinPage}>
-			<ScrollView contentContainerStyle={{ flex: 1 }}>
-				<View style={s.container}>
-					<View style={s.inputs}>
-						<TextInput value={userData.email}
-								   onChangeText={email => handleChangeData({ name: 'email', value: email })}
-								   style={s.input} theme={theme}
-								   label={'Email'} placeholder={'Enter your email'}
-								   left={<TextInput.Icon icon='email-outline'/>}
-								   mode={'outlined'}
-						/>
-						<TextInput value={userData.password}
-								   onChangeText={password => handleChangeData({ name: 'password', value: password })}
-								   style={s.input} theme={theme}
-								   label={'Password'}
-								   placeholder={'Secret password'} secureTextEntry
-								   left={<TextInput.Icon icon='lock'/>} right={<TextInput.Icon icon='eye'/>}
-								   mode={'outlined'}
-						/>
-						<Button theme={theme} style={{ alignSelf: 'flex-end' }} onPress={handleForgotPasswordPress}>
-							Forgot password?
-						</Button>
-					</View>
-					<View style={s.loginBtns}>
+		<SafeAreaView style={{ flex: 1 }}>
+			<View style={s.signinPage}>
+				<ScrollView contentContainerStyle={{ flex: 1 }}>
+					<View style={s.container}>
+						<View style={s.inputs}>
+							{error && <Text style={{ color: 'red' }}>{error}</Text>}
+							<TextInput
+								value={userData.email}
+								onChangeText={email => handleChangeData({ name: 'email', value: email })}
+								style={s.input} theme={theme}
+								label={'Email'} placeholder={'Enter your email'}
+								left={<TextInput.Icon icon='email-outline'/>}
+								mode={'outlined'}
+							/>
+							<TextInput
+								value={userData.password}
+								onChangeText={password => handleChangeData({
+									name: 'password',
+									value: password,
+								})}
+								style={s.input} theme={theme}
+								label={'Password'}
+								placeholder={'Secret password'} secureTextEntry={secureTextEntry}
+								left={<TextInput.Icon icon='lock'/>}
+								right={<TextInput.Icon icon='eye' onPress={handleSecureTextEntryPress}/>}
+								mode={'outlined'}
+							/>
+							<Button theme={theme} style={{ alignSelf: 'flex-end' }} onPress={handleForgotPasswordPress}>
+								Forgot password?
+							</Button>
+						</View>
+						<View style={s.loginBtns}>
+							<View>
+								<Button
+									theme={theme} mode={'contained'}
+									onPress={handleLoginPress}
+									disabled={loading}
+								>
+									{loading ? 'Loading' : 'Log in'}
+								</Button>
+							</View>
+							<View style={s.loginOwnOrService}>
+								<View style={s.line}></View>
+								<Text theme={theme}>Or</Text>
+								<View style={s.line}></View>
+							</View>
+							<View style={s.loginServices}>
+								<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
+									Google
+								</Button>
+								<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
+									Gitlab
+								</Button>
+							</View>
+						</View>
 						<View>
-							<Button
-								theme={theme} mode={'contained'}
-								onPress={handleLoginPress}
-							>
-								Log in
-							</Button>
-						</View>
-						<View style={s.loginOwnOrService}>
-							<View style={s.line}></View>
-							<Text theme={theme}>Or</Text>
-							<View style={s.line}></View>
-						</View>
-						<View style={s.loginServices}>
-							<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
-								Google
-							</Button>
-							<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
-								Gitlab
+							<Text theme={theme} style={{ textAlign: 'center', marginBottom: 8 }}>Have no account
+								yet?</Text>
+							<Button onPress={handleGoRegisterPress} theme={theme} mode={'outlined'}>
+								Create new account
 							</Button>
 						</View>
 					</View>
-					<View>
-						<Text theme={theme} style={{ textAlign: 'center', marginBottom: 8 }}>Have no account yet?</Text>
-						<Button onPress={handleGoRegisterPress} theme={theme} mode={'outlined'}>
-							Registration
-						</Button>
-					</View>
-				</View>
-			</ScrollView>
-		</View>
+				</ScrollView>
+			</View>
+		</SafeAreaView>
 	)
 }
