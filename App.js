@@ -1,8 +1,5 @@
-import { AppRegistry, Dimensions, StatusBar, StyleSheet, View } from 'react-native'
-import { Provider } from 'react-redux'
-import { store } from './src/redux/store'
+import { AppRegistry, Dimensions, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native'
 import {
-	Appbar,
 	MD3DarkTheme as DarkTheme,
 	MD3LightTheme as DefaultTheme,
 	Provider as PaperProvider,
@@ -11,9 +8,16 @@ import { useEffect, useState } from 'react'
 import { HomeStackPage } from './src/pages/HomeStackPage/HomeStackPage'
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
-import { QRScannerPage } from './src/pages/QRScannerPage/QRScannerPage'
 import { AccountStackPage } from './src/pages/AccountStackPage/AccountStackPage'
-import { AppBar } from '@mui/material'
+import { QRScannerStackPage } from './src/pages/QRScannerStackPage/QRScannerStackPage'
+import { Provider } from 'react-redux'
+import { store } from './src/redux/store'
+
+export const BASE_URL = 'https://ec7f-46-34-195-73.eu.ngrok.io'
+
+/*
+	TODO: Add gorhom/react-native-bottom-sheet
+ */
 
 const lightTheme = {
 	...DefaultTheme,
@@ -44,7 +48,7 @@ const WINDOW_HEIGHT = Dimensions.get('window').height
 const BOTTOM_NAVIGATION_BAR_HEIGHT = SCREEN_HEIGHT - WINDOW_HEIGHT - StatusBar.currentHeight
 
 export default function App() {
-	const [isDarkTheme, setIsDarkTheme] = useState(true)
+	const [isDarkTheme, setIsDarkTheme] = useState(false)
 	const [theme, setTheme] = useState(darkTheme)
 
 	useEffect(() => {
@@ -66,24 +70,40 @@ export default function App() {
 	return (
 		<Provider store={store}>
 			<PaperProvider theme={theme}>
-				<View style={s.app}>
-					<NavigationContainer theme={theme}>
-						<Tab.Navigator>
-							<Tab.Screen name={'HomeStackPage'} component={HomeStackPage} options={{
-								tabBarIcon: 'home',
-								title: 'Home'
-							}}/>
-							<Tab.Screen name={'QRScanner'} component={QRScannerPage} options={{
-								tabBarIcon: 'qrcode-scan',
-								title: 'QR Scan'
-							}}/>
-							<Tab.Screen children={() => <AccountStackPage setIsDarkTheme={setIsDarkTheme}/>} name={'AccountStackPage'} options={{
-								tabBarIcon: 'account',
-								title: 'Account'
-							}}/>
-						</Tab.Navigator>
-					</NavigationContainer>
-				</View>
+				<SafeAreaView style={{ flex: 1 }}>
+					<View style={s.app}>
+						<NavigationContainer theme={theme}>
+							<Tab.Navigator>
+								<Tab.Screen
+									name={'HomeStackPage'} component={HomeStackPage}
+									options={{
+										tabBarIcon: 'home',
+										title: 'Home',
+									}}
+								/>
+								<Tab.Screen
+									name={'QRScannerStackPage'} component={QRScannerStackPage}
+									options={{
+										tabBarIcon: 'qrcode-scan',
+										title: 'QR Scan',
+									}}
+								/>
+								<Tab.Screen
+									name={'AccountStackPage'}
+									children={() =>
+										<AccountStackPage
+											isDarkTheme={isDarkTheme}
+											setIsDarkTheme={setIsDarkTheme}
+										/>
+									}
+									options={{
+										tabBarIcon: 'account',
+										title: 'Account',
+									}}/>
+							</Tab.Navigator>
+						</NavigationContainer>
+					</View>
+				</SafeAreaView>
 			</PaperProvider>
 		</Provider>
 	)
