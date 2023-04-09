@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Dimensions, StyleSheet, View } from 'react-native'
-import { Text, useTheme } from 'react-native-paper'
+import { Button, Text, useTheme } from 'react-native-paper'
 import { BarCodeScanner } from 'expo-barcode-scanner'
 
-export const QRScanner = () => {
+export const QRScanner = ({ navigation, route }) => {
 	const theme = useTheme()
 
 	const [hasPermission, setHasPermission] = useState(null)
 	const [scanned, setScanned] = useState(false)
+	const [error, setError] = useState('')
 
 	useEffect(() => {
 		(async () => {
@@ -18,16 +19,16 @@ export const QRScanner = () => {
 
 	const handleBarCodeScanned = ({ type, data }) => {
 		setScanned(true)
-		alert(`Bar code with type ${type} and data ${data} has been scanned!`)
+		navigation.navigate('QRScanEditPage', { url: data })
 	}
 
-	if (hasPermission === null) {
-		return <Text>Requesting for camera permission</Text>
-	}
-	if (hasPermission === false) {
-		return <Text>No access to camera</Text>
+	const handleRetryPress = () => {
+		setError('')
+		setScanned(false)
 	}
 
+	if (hasPermission === null) return <Text>Requesting for camera permission</Text>
+	if (hasPermission === false) return <Text>No access to camera</Text>
 	return (
 		<View
 			style={{
@@ -39,10 +40,18 @@ export const QRScanner = () => {
 				onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
 				style={StyleSheet.absoluteFillObject}
 			/>
-			{scanned && (
+			{scanned && error && (
 				<View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
-					<Text theme={theme}>Scanned Successfully!</Text>
-					{/*<Text style={styles.scanOverlayText}></Text>*/}
+					<View style={{ padding: 16 }}>
+						<View>
+							<View>
+								<Text>Error. {error}</Text>
+							</View>
+							<View>
+								<Button theme={theme} onPress={handleRetryPress}>Retry</Button>
+							</View>
+						</View>
+					</View>
 				</View>
 			)}
 		</View>
@@ -55,10 +64,8 @@ const styles = StyleSheet.create({
 	scanOverlay: {
 		position: 'absolute',
 		top: centerOfScreenInPercent,
-		left: '20%',
-		right: '20%',
-		alignItems: 'center',
-		paddingVertical: 15,
+		left: 32,
+		right: 32,
 	},
 	scanOverlayText: {
 		backgroundColor: 'white',
