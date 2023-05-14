@@ -19,7 +19,8 @@ const accountFields = [
 	},
 	{
 		label: 'Settings',
-		disabled: true,
+		disabled: false,
+		navigate: 'SettingsPage',
 	},
 	{
 		label: 'About us',
@@ -49,12 +50,13 @@ export const AccountPage = ({ navigation, route, isDarkTheme, setIsDarkTheme }) 
 			<View>
 				<ScrollView>
 					<View style={s.container}>
-						<Text theme={theme} style={{ textAlign: 'center' }}>{auth.email || 'Unauthorized'}</Text>
-						<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-							<Text theme={theme}>Dark mode</Text>
-							<Switch theme={theme} value={isDarkTheme}
-									onValueChange={() => setIsDarkTheme(prev => !prev)}/>
-						</View>
+						<Text
+							theme={theme}
+							style={{ marginBottom: 16 }}
+							variant={'titleLarge'}
+						>
+							User: {auth.email || 'Unauthorized'}
+						</Text>
 						<View style={s.accountFields}>
 							{
 								auth.token && accountFields.map(row => (
