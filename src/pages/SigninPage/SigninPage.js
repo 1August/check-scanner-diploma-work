@@ -17,7 +17,6 @@ export const SigninPage = ({ navigation, route }) => {
 	const [userData, setUserData] = useState({ email: '', password: '' })
 	const [error, setError] = useState('')
 	const [loading, setLoading] = useState(false)
-
 	const [secureTextEntry, setSecureTextEntry] = useState(true)
 
 	const s = StyleSheet.create({
@@ -88,7 +87,6 @@ export const SigninPage = ({ navigation, route }) => {
 					await AsyncStorage.setItem('auth', JSON.stringify(auth))
 					dispatch(loginSuccess(auth))
 				} catch (error) {
-					console.log(error.message)
 					alert(error.message)
 				}
 			})
@@ -101,7 +99,7 @@ export const SigninPage = ({ navigation, route }) => {
 	}
 
 	const handleSecureTextEntryPress = () => {
-		setSecureTextEntry(isSecure => !isSecure)
+		setSecureTextEntry(!secureTextEntry)
 	}
 
 	const handleForgotPasswordPress = () => {
@@ -111,6 +109,10 @@ export const SigninPage = ({ navigation, route }) => {
 	const handleGoRegisterPress = () => {
 		navigation.navigate('Signup')
 	}
+
+	// TODO: Add component <HelperText type="error" visible={hasErrors()}>
+	//         Email address is invalid!
+	//       </HelperText>
 
 	if (token) return navigation.popToTop()
 	return (
