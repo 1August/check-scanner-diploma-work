@@ -7,8 +7,10 @@ import { logout } from '../../redux/slices/authSlice'
 import { ChecksPage } from '../ChecksPage/ChecksPage'
 import { CheckPage } from '../CheckPage/CheckPage'
 import { useDispatch, useSelector } from 'react-redux'
+import { StatisticsPage } from '../StatisticsPage/StatisticsPage'
+import { SettingsPage } from '../SettingsPage/SettingsPage'
 
-export const AccountStackPage = ({ isDarkTheme, setIsDarkTheme }) => {
+export const AccountStackPage = ({ setIsDarkTheme }) => {
 	const theme = useTheme()
 	const Stack = createNativeStackNavigator()
 
@@ -22,16 +24,11 @@ export const AccountStackPage = ({ isDarkTheme, setIsDarkTheme }) => {
 	}
 
 	return (
-		<Stack.Navigator>
+		<Stack.Navigator initialRouteName={'Account'}>
 			<Stack.Screen
 				name={'Account'}
-				children={({ route, navigation }) =>
-					<AccountPage
-						route={route} navigation={navigation} isDarkTheme={isDarkTheme}
-						setIsDarkTheme={setIsDarkTheme}
-					/>
-				}
-				options={({ route, navigation }) => ({
+				component={AccountPage}
+				options={({ navigation }) => ({
 					// headerRight: LogoutButton,
 					...stackBaseStyles,
 					// header: AccountHeader,
@@ -63,42 +60,29 @@ export const AccountStackPage = ({ isDarkTheme, setIsDarkTheme }) => {
 				...stackBaseStyles,
 			}}/>
 
+			<Stack.Screen name={'StatisticsPage'} component={StatisticsPage} options={{
+				...stackBaseStyles,
+				title: 'Statistics',
+			}}/>
 			<Stack.Screen name={'ChecksPage'} component={ChecksPage} options={{
 				...stackBaseStyles,
 				title: 'Checks',
 			}}/>
-			<Stack.Screen name={'CheckPage'} component={CheckPage} options={({ navigation, route }) => ({
-				title: route.params.check,
+			<Stack.Screen name={'CheckPage'} component={CheckPage} options={({ route }) => ({
+				title: route.params.check.checkId,
 				...stackBaseStyles,
 			})}/>
+			<Stack.Screen name={'SettingsPage'} children={({ navigation, route }) => (
+				<SettingsPage
+					navigation={navigation}
+					route={route}
+					setIsDarkTheme={setIsDarkTheme}
+				/>
+			)}
+						  options={({ route }) => ({
+							  ...stackBaseStyles,
+							  title: 'Settings',
+						  })}/>
 		</Stack.Navigator>
 	)
 }
-
-// const AccountHeader = ({ navigation }) => {
-// 	const theme = useTheme()
-//
-// 	const dispatch = useDispatch()
-//
-// 	const token = useSelector(state => state.auth.token)
-//
-// 	return (
-// 		<Appbar.Header theme={theme}>
-// 			<Appbar.Content title={'Account'}/>
-// 			{
-// 				token ?
-// 					<Appbar.Action
-// 						icon={'logout'}
-// 						onPress={() => {
-// 							dispatch(logout())
-// 							navigation.navigate('HomeStackPage')
-// 						}}
-// 					/> :
-// 					<Appbar.Action
-// 						icon={'login'}
-// 						onPress={() => navigation.navigate('Signin')}
-// 					/>
-// 			}
-// 		</Appbar.Header>
-// 	)
-// }
