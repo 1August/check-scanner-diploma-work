@@ -1,56 +1,30 @@
-import { StyleSheet, SafeAreaView, ScrollView, View } from 'react-native'
-import { DataTable, useTheme, Text } from 'react-native-paper'
-import { useEffect, useState } from 'react'
-import { Loading } from '../Loading/Loading'
-import { BASE_URL } from '../../../App'
-import { useSelector } from 'react-redux'
-import axios from 'axios'
+import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import { DataTable, Text, useTheme } from 'react-native-paper'
 
 export const CheckPage = ({ navigation, route }) => {
 	const theme = useTheme()
+	const check = route.params.check
+	const checkDate = new Date(check?.date).toDateString()
 
-	const token = useSelector(state => state.auth.token)
-
-	const [check, setCheck] = useState(null)
-	const [loading, setLoading] = useState(false)
-
-	useEffect(() => {
-		if (check == null) {
-			setLoading(true)
-
-			const url = `${BASE_URL}/api/checks/${route.params.check}`
-			axios.get(url, {
-				headers: {
-					Authorization: token,
-					'Cache-Control': 'no-cache',
-					Pragma: 'no-cache',
-					Expires: '0',
-				},
-			})
-				.then(res => {
-					console.log('Check data:', res.data)
-					setCheck(res.data.data)
-				})
-				.catch(error => {
-					alert(error.message)
-				})
-				.finally(() => {
-					setLoading(false)
-				})
+	const s = StyleSheet.create({
+		container: {
+			flex: 1,
+			paddingHorizontal: 16,
+			paddingTop: 8
 		}
-	}, [route.params.check])
+	})
 
-	if (loading) {
-		return <Loading/>
-	}
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
 			<View style={s.homePage}>
 				<ScrollView>
 					<View style={s.container}>
 						<View>
-							<Text theme={theme} variant={'titleMedium'}>
-								{new Date(check?.date).toDateString()}
+							<Text
+								theme={theme}
+								variant={'titleMedium'}
+							>
+								{checkDate}
 							</Text>
 						</View>
 						<DataTable theme={theme}>
@@ -61,14 +35,17 @@ export const CheckPage = ({ navigation, route }) => {
 								<DataTable.Title numeric style={{ flex: 1 }}>Overall</DataTable.Title>
 							</DataTable.Header>
 							{
-								check?.checkRows.map(row => (
-									<DataTable.Row>
+								check?.checkRows.map(row => {
+									console.log({ row })
+									return (
+										<DataTable.Row key={row._id}>
 										<DataTable.Cell style={{ flex: 4 }}>{row.name}</DataTable.Cell>
-										<DataTable.Cell numeric style={{ flex: 1 }}>{row.cost}</DataTable.Cell>
-										<DataTable.Cell numeric style={{ flex: 1 }}>{row.count}</DataTable.Cell>
-										<DataTable.Cell numeric style={{ flex: 1 }}>{row.overall}</DataTable.Cell>
+										<DataTable.Cell numeric style={{ flex: 1 }}>{+row.cost}</DataTable.Cell>
+										<DataTable.Cell numeric style={{ flex: 1 }}>{+row.count}</DataTable.Cell>
+										<DataTable.Cell numeric style={{ flex: 1 }}>{+row.overall}</DataTable.Cell>
 									</DataTable.Row>
-								))
+									)
+								})
 							}
 							<DataTable.Row>
 								<DataTable.Cell numeric textStyle={{ fontSize: 20, fontWeight: 'bold' }}>
@@ -82,11 +59,3 @@ export const CheckPage = ({ navigation, route }) => {
 		</SafeAreaView>
 	)
 }
-
-const s = StyleSheet.create({
-	container: {
-		flex: 1,
-		paddingHorizontal: 16,
-		paddingTop: 8
-	}
-})
