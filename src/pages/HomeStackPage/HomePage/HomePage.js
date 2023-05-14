@@ -1,16 +1,35 @@
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native'
-import { Card, Searchbar, Text, useTheme } from 'react-native-paper'
-import { useEffect, useState } from 'react'
+import { RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native'
+import { Card, Divider, Searchbar, Text, useTheme } from 'react-native-paper'
+import { useCallback, useEffect, useState } from 'react'
 import { BASE_URL } from '../../../../App'
 import axios from 'axios'
 import { Loading } from '../../Loading/Loading'
+import { ErrorPage } from '../../ErrorPage/ErrorPage'
+import { HomePageServices } from '../../../components/HomePageServices/HomePageServices'
 
 export const HomePage = ({ navigation, route }) => {
 	const theme = useTheme()
 
 	const [searchQuery, setSearchQuery] = useState('')
 	const [products, setProducts] = useState([])
+	// const controller = useRef(new AbortController())
+
+	const [status, setStatus] = useState(null)
 	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState('')
+	const [refreshing, setRefreshing] = useState(false)
+
+	useEffect(() => {
+		const handler = navigation.addListener('focus', () => {
+			console.log('Home page updated')
+		})
+
+		return () => {
+			handler()
+			setRefreshing(false)
+			// controller.current.abort()
+		}
+	}, [])
 
 	const s = StyleSheet.create({
 		homePage: {
@@ -19,7 +38,7 @@ export const HomePage = ({ navigation, route }) => {
 			backgroundColor: theme.colors.background,
 
 			paddingTop: StatusBar.currentHeight,
-			paddingBottom: 16,
+			// paddingBottom: 16,
 		},
 		container: {
 			flex: 1,
@@ -51,7 +70,9 @@ export const HomePage = ({ navigation, route }) => {
 		},
 		marketText: {},
 		marketIcon: {},
-
+		productsWrapper: {
+			marginTop: 16
+		},
 		products: {
 			marginTop: 16,
 
@@ -82,67 +103,70 @@ export const HomePage = ({ navigation, route }) => {
 		},
 	})
 
-	// const markets = [
-	// 	{
-	// 		id: 1,
-	// 		name: 'Small',
-	// 		description: 'Lorem ipsum dolor sit amet.',
-	// 	},
-	// 	{
-	// 		id: 2,
-	// 		name: 'Galmart',
-	// 		description: 'Lorem ipsum dolor sit amet.',
-	// 	},
-	// 	{
-	// 		id: 3,
-	// 		name: 'Magnum',
-	// 		description: 'Lorem ipsum dolor sit amet.',
-	// 	},
-	// ]
-
 	const handleSearch = () => {
 		navigation.navigate('SearchPage', { searchQuery })
 	}
 
-	// const handleMarketPress = (market) => {
-	// 	navigation.navigate('Supermarket', {
-	// 		id: market.id,
-	// 		name: market.name,
-	// 	})
-	// }
-
 	const handleProductPress = (product) => {
-		console.log(`Clicked product ${product.id}`)
-
-		navigation.navigate('Product', { ...product })
+		navigation.navigate('ProductPage', { product })
 	}
 
-	useEffect(() => {
-		if (!products.length) {
-			setLoading(true)
-			const url = `${BASE_URL}/api/data/top`
+	const getTopProducts = async () => {
+		setLoading(true)
 
-			axios.get(url, {
-					headers: {
-						'Cache-Control': 'no-cache',
-						Pragma: 'no-cache',
-						Expires: '0',
-					},
-				})
-				.then(res => {
-					setProducts(res.data.data || [])
-				})
-				.finally(() => {
-					setLoading(false)
-				})
-		}
+		const url = `${BASE_URL}/api/data/top`
+		return axios.get(url, {
+			headers: {
+				'Cache-Control': 'no-cache',
+				Pragma: 'no-cache',
+				Expires: '0',
+			},
+			// signal: controller.current.signal
+		})
+			.then(res => {
+				setStatus(res.status)
+				// console.log('RES------------------', res.data)
+
+				setProducts(res.data.data || [])
+			})
+			.catch(error => {
+				setError(error?.message)
+			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}
+
+	const onRefresh = useCallback(async () => {
+		setRefreshing(true)
+		setSearchQuery('')
+
+		await getTopProducts()
+		setRefreshing(false)
+	}, [])
+
+	useEffect(() => {
+		if (loading) return
+		if (error) return
+		if (products.length) return
+		if ([200, 201].includes(status)) return;
+		getTopProducts()
 	}, [products])
 
-	if (loading) return <Loading/>
+	function handleGoHomePress () {
+		setError('')
+		getTopProducts()
+	}
+
+	if (error) return <ErrorPage navigation={navigation} message={error} onGoHomePress={handleGoHomePress}/>
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
 			<View style={s.homePage}>
-				<ScrollView>
+				<ScrollView
+					refreshControl={
+						<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
+					}
+				>
 					<View style={s.container}>
 						<Searchbar
 							value={searchQuery} onChangeText={setSearchQuery}
@@ -150,46 +174,86 @@ export const HomePage = ({ navigation, route }) => {
 							onSubmitEditing={handleSearch}
 							style={s.searchbar} clearIcon={'close'} theme={theme}
 						/>
-						{/*<View style={s.markets}>*/}
-						{/*{*/}
-						{/*	markets.map(market => (*/}
-						{/*		<Card*/}
-						{/*			theme={theme} mode={'elevated'} onPress={() => handleMarketPress(market)}*/}
-						{/*			key={market.id} style={s.market}*/}
-						{/*		>*/}
-						{/*			<Card.Title*/}
-						{/*				theme={theme} title={market.name} subtitle={market.description}*/}
-						{/*				right={() => <Button icon={'chevron-right'}/>}*/}
-						{/*				subtitleNumberOfLines={1}*/}
-						{/*			/>*/}
-						{/*		</Card>*/}
-						{/*	))*/}
-						{/*}*/}
-						{/*</View>*/}
-						<View style={s.products}>
-							{
-								products?.map(product => (
-									<Card
-										key={product.id}
-										style={s.product} theme={theme} onPress={() => handleProductPress(product)}
-									>
-										<Card.Cover
-											theme={{ roundness: 1 }}
-											source={{ uri: 'https://picsum.photos/700' }}
-										/>
-										<Card.Title title={product.name} theme={theme}/>
-										<Card.Content theme={theme}>
-											<Text theme={theme} style={{ marginBottom: 8 }}>
-												{product.price}
-											</Text>
-										</Card.Content>
-									</Card>
-								))
-							}
+						<HomePageServices
+							navigation={navigation}
+							route={route}
+						/>
+						<Divider/>
+						<View style={s.productsWrapper}>
+							<Text
+								variant={'headlineLarge'}
+							>
+								Top products
+							</Text>
+							<View style={s.products}>
+								{
+									loading ?
+										<Loading/> :
+										products.map(product => (
+											<Card
+												key={product.id}
+												style={s.product} theme={theme} onPress={() => handleProductPress(product)}
+											>
+												<Card.Cover
+													theme={{ roundness: 1 }}
+													source={{ uri: product?.imgLink || 'https://picsum.photos/700' }}
+													style={{
+														height: 128,
+														width: '100%',
+
+														flex: 1,
+														justifySelf: 'center',
+														alignSelf: 'center',
+													}}
+												/>
+												<Card.Title title={product.name} theme={theme}/>
+												<Card.Content theme={theme}>
+													<Text theme={theme} style={{ marginBottom: 8 }}>
+														{product.price}
+													</Text>
+												</Card.Content>
+											</Card>
+										))
+								}
+							</View>
 						</View>
 					</View>
 				</ScrollView>
 			</View>
 		</SafeAreaView>
 	)
+}
+
+
+{/*<View style={s.markets}>*/
+}
+{/*{*/
+}
+{/*	markets.map(market => (*/
+}
+{/*		<Card*/
+}
+{/*			theme={theme} mode={'elevated'} onPress={() => handleMarketPress(market)}*/
+}
+{/*			key={market.id} style={s.market}*/
+}
+{/*		>*/
+}
+{/*			<Card.Title*/
+}
+{/*				theme={theme} title={market.name} subtitle={market.description}*/
+}
+{/*				right={() => <Button icon={'chevron-right'}/>}*/
+}
+{/*				subtitleNumberOfLines={1}*/
+}
+{/*			/>*/
+}
+{/*		</Card>*/
+}
+{/*	))*/
+}
+{/*}*/
+}
+{/*</View>*/
 }
