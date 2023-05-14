@@ -42,7 +42,6 @@ export const checkAuth = () => async (dispatch) => {
 
 		const auth = JSON.parse(authData)
 		const decoded = jwt_decode(auth.token)
-		console.log({decoded})
 		if (decoded.exp * 1000 < Date.now()) {
 			alert('Unauthorized!')
 			return dispatch(logout())
