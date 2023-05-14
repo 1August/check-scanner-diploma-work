@@ -3,12 +3,20 @@ import { Dimensions, StyleSheet, View } from 'react-native'
 import { Button, Text, useTheme } from 'react-native-paper'
 import { BarCodeScanner } from 'expo-barcode-scanner'
 
-export const QRScanner = ({ navigation, route }) => {
+export const QRScanner = ({ navigation }) => {
 	const theme = useTheme()
 
-	const [hasPermission, setHasPermission] = useState(null)
+	const [hasPermission, setHasPermission] = useState(false)
 	const [scanned, setScanned] = useState(false)
 	const [error, setError] = useState('')
+
+	useEffect(() => {
+		const focusHandler = navigation.addListener('focus', () => {
+			console.log('Re-rendered')
+		})
+
+		return focusHandler
+	}, [navigation])
 
 	useEffect(() => {
 		(async () => {
