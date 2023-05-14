@@ -1,12 +1,15 @@
 import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
-import { ActivityIndicator, Card, Searchbar, Text, useTheme } from 'react-native-paper'
+import { Card, Text, useTheme } from 'react-native-paper'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { BASE_URL } from '../../../App'
 import { Loading } from '../Loading/Loading'
+import { useSelector } from 'react-redux'
+import { ErrorPage } from '../ErrorPage/ErrorPage'
 
 export const SearchPage = ({ navigation, route }) => {
 	const theme = useTheme()
+	const token = useSelector(state => state.auth.token)
 
 	const [products, setProducts] = useState([])
 	const [error, setError] = useState('')
@@ -14,10 +17,11 @@ export const SearchPage = ({ navigation, route }) => {
 
 	function loadProducts() {
 		setLoading(true)
+		setError('')
 
-		axios.post(`${BASE_URL}/api/supermarket/search`, {
+		axios.post(`${BASE_URL}/api/kaspi/search`, {
 			query: route.params.searchQuery,
-		})
+		}, { headers: { Authorization: token } })
 			.then(res => {
 				setProducts(res.data.data)
 			}, error => {
@@ -35,28 +39,6 @@ export const SearchPage = ({ navigation, route }) => {
 		}
 	}, [])
 
-
-	if (loading) {
-		return <Loading/>
-	}
-
-	if (error) {
-		return (
-			<SafeAreaView style={{ flex: 1 }}>
-				<View style={{ flex: 1 }}>
-					<Text>Error. {error}</Text>
-				</View>
-			</SafeAreaView>
-		)
-	}
-
-	if (!products.length) {
-		return <Text theme={theme}>Product not fount!</Text>
-	}
-
-	const handleProductPress = (product) => {
-		console.log('Product pressed', product)
-	}
 
 	const s = StyleSheet.create({
 		container: {
@@ -89,6 +71,37 @@ export const SearchPage = ({ navigation, route }) => {
 
 	})
 
+	const handleProductPress = (product) => {
+		console.log('Product pressed', product)
+	}
+
+	if (loading) {
+		return <Loading/>
+	}
+
+	if (error) {
+		return <ErrorPage
+			message={error}
+			onGoHomePress={() => navigation.popToTop()}
+			navigation={navigation}
+		/>
+	}
+
+	if (!products.length) {
+		return (
+			<SafeAreaView style={{ flex: 1 }}>
+				<View style={{ flex: 1 }}>
+					<ScrollView>
+						<View style={s.container}>
+							<View style={s.products}>
+								<Text theme={theme}>Product not fount!</Text>
+							</View>
+						</View>
+					</ScrollView>
+				</View>
+			</SafeAreaView>
+		)
+	}
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
 			<View style={{ flex: 1 }}>
@@ -97,8 +110,12 @@ export const SearchPage = ({ navigation, route }) => {
 						<View style={s.products}>
 							{
 								products.map((product, i) => (
-									<Card style={s.product} theme={theme} onPress={() => handleProductPress(product)}
-										  key={i}>
+									<Card
+										style={s.product}
+										theme={theme}
+										onPress={() => handleProductPress(product)}
+										key={i}
+									>
 										<Card.Cover
 											theme={{ roundness: 1 }}
 											source={{ uri: 'https://picsum.photos/700' }}
