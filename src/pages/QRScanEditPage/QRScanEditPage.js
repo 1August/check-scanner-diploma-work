@@ -106,7 +106,7 @@ export const QRScanEditPage = ({ navigation, route }) => {
 	})
 
 	function removeProduct(id) {
-		setCheck(check => ({ ...check, checkRows: check.checkRows.filter(row => row._id !== id) }))
+		setCheck(check => ({ ...check, checkRows: check?.checkRows?.filter(row => row._id !== id) }))
 	}
 
 	function handleChange({ name, value }) {
@@ -115,7 +115,7 @@ export const QRScanEditPage = ({ navigation, route }) => {
 
 	function submitModal() {
 		setModalShown(false)
-		setCheck(check => ({ ...check, checkRows: [...check.checkRows, newProduct] }))
+		setCheck(check => ({ ...check, checkRows: [...check?.checkRows, newProduct] }))
 		setNewProduct({
 			name: '',
 			cost: '',
@@ -128,16 +128,9 @@ export const QRScanEditPage = ({ navigation, route }) => {
 		setLoading(true)
 		setError('')
 
-		const url = `${BASE_URL}/api/checks/save`
+		const url = `${BASE_URL}/api/checks`
 
-		axios.post(url, { check }, {
-			headers: {
-				Authorization: token,
-				'Cache-Control': 'no-cache',
-				Pragma: 'no-cache',
-				Expires: '0',
-			},
-		})
+		axios.post(url, { check }, { headers: { Authorization: token }, })
 			.then(res => {
 				if (res.status !== 201) throw new Error('Error on save check!')
 
