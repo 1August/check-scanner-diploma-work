@@ -1,22 +1,24 @@
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { Button, Text, TextInput, useTheme } from 'react-native-paper'
 import { useState } from 'react'
-import jwt_decode from 'jwt-decode'
-import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
-import { loginSuccess } from '../../redux/slices/authSlice'
-import { BASE_URL } from '../../../App'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { login } from '../../services/auth.service'
+import { setError } from '../../redux/slices/authSlice'
+import { useSafeAreaViewStyles } from '../../hooks/useSafeAreaViewStyles'
 
 export const SigninPage = ({ navigation, route }) => {
 	const theme = useTheme()
+	const safeAreaViewStyles = useSafeAreaViewStyles()
+	const strings = useSelector(state => state.localization.strings)
+
+	const token = useSelector(state => state.auth.token)
+	const error = useSelector(state => state.auth.error)
+	const loading = useSelector(state => state.auth.loading)
+	const status = useSelector(state => state.auth.status)
 
 	const dispatch = useDispatch()
-	const token = useSelector(state => state.auth.token)
 
 	const [userData, setUserData] = useState({ email: '', password: '' })
-	const [error, setError] = useState('')
-	const [loading, setLoading] = useState(false)
 	const [secureTextEntry, setSecureTextEntry] = useState(true)
 
 	const s = StyleSheet.create({
@@ -69,33 +71,13 @@ export const SigninPage = ({ navigation, route }) => {
 	})
 
 	const handleChangeData = (input) => {
-		setError('')
-		setUserData(prev => ({ ...prev, [input.name]: input.value }))
+		setUserData(prev => ({ ...prev, [input.name]: input.value.trimEnd() }))
 	}
 
 	const handleLoginPress = () => {
-		setLoading(true)
-		setError('')
+		if (!userData.email || !userData.password) return dispatch(setError('Field is empty'))
 
-		const url = `${BASE_URL}/api/auth/signin`
-
-		axios.post(url, { ...userData })
-			.then(async res => {
-				try {
-					const decoded = jwt_decode(res.data.data)
-					const auth = { id: decoded.userId, email: decoded.email, token: res.data.data }
-					await AsyncStorage.setItem('auth', JSON.stringify(auth))
-					dispatch(loginSuccess(auth))
-				} catch (error) {
-					alert(error.message)
-				}
-			})
-			.catch(error => {
-				setError(error.message)
-			})
-			.finally(() => {
-				setLoading(false)
-			})
+		dispatch(login(userData))
 	}
 
 	const handleSecureTextEntryPress = () => {
@@ -107,80 +89,85 @@ export const SigninPage = ({ navigation, route }) => {
 	}
 
 	const handleGoRegisterPress = () => {
-		navigation.navigate('Signup')
+		navigation.navigate('SignupPage')
 	}
-
-	// TODO: Add component <HelperText type="error" visible={hasErrors()}>
-	//         Email address is invalid!
-	//       </HelperText>
 
 	if (token) return navigation.popToTop()
 	return (
-		<SafeAreaView style={{ flex: 1 }}>
-			<View style={s.signinPage}>
-				<ScrollView contentContainerStyle={{ flex: 1 }}>
-					<View style={s.container}>
-						<View style={s.inputs}>
-							{error && <Text style={{ color: 'red' }}>{error}</Text>}
-							<TextInput
-								value={userData.email}
-								onChangeText={email => handleChangeData({ name: 'email', value: email })}
-								style={s.input} theme={theme}
-								label={'Email'} placeholder={'Enter your email'}
-								left={<TextInput.Icon icon='email-outline'/>}
-								mode={'outlined'}
-							/>
-							<TextInput
-								value={userData.password}
-								onChangeText={password => handleChangeData({
-									name: 'password',
-									value: password,
-								})}
-								style={s.input} theme={theme}
-								label={'Password'}
-								placeholder={'Secret password'} secureTextEntry={secureTextEntry}
-								left={<TextInput.Icon icon='lock'/>}
-								right={<TextInput.Icon icon='eye' onPress={handleSecureTextEntryPress}/>}
-								mode={'outlined'}
-							/>
-							<Button theme={theme} style={{ alignSelf: 'flex-end' }} onPress={handleForgotPasswordPress}>
-								Forgot password?
+		<View style={s.signinPage}>
+			<ScrollView contentContainerStyle={{ flex: 1 }}>
+				<View style={s.container}>
+					<View style={s.inputs}>
+						{error && <Text style={{ color: 'red' }}>{error}</Text>}
+						<TextInput
+							autoCapitalize={'none'}
+							value={userData.email}
+							onChangeText={email => handleChangeData({ name: 'email', value: email })}
+							style={s.input} theme={theme}
+							label={strings.email} placeholder={strings.enterYourEmail}
+							left={<TextInput.Icon icon='email'/>}
+							mode={'outlined'}
+						/>
+						<TextInput
+							autoCapitalize={'none'}
+							value={userData.password}
+							onChangeText={password => handleChangeData({
+								name: 'password',
+								value: password,
+							})}
+							style={s.input} theme={theme}
+							label={strings.password}
+							placeholder={strings.secretPassword} secureTextEntry={secureTextEntry}
+							left={<TextInput.Icon icon='lock'/>}
+							right={<TextInput.Icon icon='eye' onPress={handleSecureTextEntryPress}/>}
+							mode={'outlined'}
+						/>
+						<Button
+							theme={theme}
+							style={{ alignSelf: 'flex-end' }}
+							onPress={handleForgotPasswordPress}
+							disabled={true}
+						>
+							{strings.forgotPassword}?
+						</Button>
+					</View>
+					<View style={s.loginBtns}>
+						<View>
+							<Button
+								theme={theme} mode={'contained'}
+								onPress={handleLoginPress}
+								disabled={loading}
+							>
+								{loading ? strings.loading : strings.logIn}
 							</Button>
 						</View>
-						<View style={s.loginBtns}>
-							<View>
-								<Button
-									theme={theme} mode={'contained'}
-									onPress={handleLoginPress}
-									disabled={loading}
-								>
-									{loading ? 'Loading' : 'Log in'}
-								</Button>
-							</View>
-							<View style={s.loginOwnOrService}>
-								<View style={s.line}></View>
-								<Text theme={theme}>Or</Text>
-								<View style={s.line}></View>
-							</View>
-							<View style={s.loginServices}>
-								<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
-									Google
-								</Button>
-								<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
-									Gitlab
-								</Button>
-							</View>
+						<View style={s.loginOwnOrService}>
+							{/*<View style={s.line}></View>*/}
+							<Text theme={theme}>{strings.or}</Text>
+							{/*<View style={s.line}></View>*/}
 						</View>
-						<View>
-							<Text theme={theme} style={{ textAlign: 'center', marginBottom: 8 }}>Have no account
-								yet?</Text>
-							<Button onPress={handleGoRegisterPress} theme={theme} mode={'outlined'}>
-								Create new account
+						<View style={s.loginServices}>
+							<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
+								Google
+							</Button>
+							<Button disabled={true} style={s.loginServiceBtn} theme={theme} mode={'outlined'}>
+								Gitlab
 							</Button>
 						</View>
 					</View>
-				</ScrollView>
-			</View>
-		</SafeAreaView>
+					<View>
+						<Text
+							theme={theme}
+							style={{ textAlign: 'center', marginBottom: 8 }}
+						>
+							{strings.haveNotAccountYet}?
+						</Text>
+						<Button onPress={handleGoRegisterPress} theme={theme} mode={'outlined'}>
+							{strings.createNewAccount}
+						</Button>
+					</View>
+				</View>
+			</ScrollView>
+		</View>
 	)
 }

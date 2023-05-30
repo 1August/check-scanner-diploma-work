@@ -1,56 +1,58 @@
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
-import { Button, Divider, FAB, IconButton, Modal, Portal, Text, TextInput, useTheme } from 'react-native-paper'
+import { Linking, ScrollView, StyleSheet, View } from 'react-native'
+import { Button, Modal, Portal, Text, useTheme } from 'react-native-paper'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-import { BASE_URL } from '../../../App'
 import { useSelector } from 'react-redux'
 import { Loading } from '../Loading/Loading'
+import { ErrorPage } from '../ErrorPage/ErrorPage'
+import { api } from '../../lib/api'
+import QRCode from 'react-native-qrcode-svg'
+import { NoDataPage } from '../NoDataPage/NoDataPage'
+import { useSafeAreaViewStyles } from '../../hooks/useSafeAreaViewStyles'
 
 export const QRScanEditPage = ({ navigation, route }) => {
 	const theme = useTheme()
 	const token = useSelector(state => state.auth.token)
+	const safeAreaViewStyles = useSafeAreaViewStyles()
 
-	const [check, setCheck] = useState({
-		checkId: null,
-		checkRows: [],
-		total: null,
-		date: null,
-	})
-	const [modalShown, setModalShown] = useState(false)
-	const [snackBarShown, setSnackbarShown] = useState(false)
-	const [newProduct, setNewProduct] = useState({
+	const strings = useSelector(state => state.localization.strings)
+
+	const initialNewProduct = {
 		name: '',
-		cost: '',
-		count: '1',
-		overall: '0',
-	})
+		cost: 0,
+		count: 1,
+		overall: 0,
+	}
+	const [cheque, setCheque] = useState(null)
+	const chequeDate = (cheque?.date && new Date(cheque.date)) ?? new Date()
+	const [newProduct, setNewProduct] = useState({ ...initialNewProduct })
+	const [productIdToRemove, setProductIdToRemove] = useState(null)
+
+	const [requestModalVisible, setRequestModalVisible] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 
 	useEffect(() => {
-
-	}, [])
+		navigation.setOptions({
+			headerRight: () => <Button
+				children={strings.save}
+				onPress={() => saveChequeInAccount()}
+				mode={'text'} theme={theme}
+			/>,
+		})
+	}, [navigation, cheque])
 
 	useEffect(() => {
 		setLoading(true)
+		setError('')
 
-		const url = `${BASE_URL}/api/checks/scan`
-		axios.post(url, { url: route.params.url }, {
-			headers: {
-				Authorization: token,
-				'Cache-Control': 'no-cache',
-				Pragma: 'no-cache',
-				Expires: '0',
-			},
-		})
+		const url = '/api/cheques/scan'
+		api
+			.post(url, { url: route.params.url }, { headers: { Authorization: token } })
 			.then(res => {
-				console.log({ res })
-				if (res.status !== 200 && res.status !== 201) throw new Error(res.data.message)
-				setCheck(res.data.data)
+				setCheque(res.data.data)
 			})
 			.catch(error => {
-				console.log(error)
-				setError('It seems you scanned this check before!')
+				setError(error.message)
 			})
 			.finally(() => {
 				setLoading(false)
@@ -58,18 +60,46 @@ export const QRScanEditPage = ({ navigation, route }) => {
 	}, [route.params.url])
 
 	useEffect(() => {
-		setNewProduct(prev => ({ ...prev, overall: String(+prev.cost * +prev.count) }))
-	}, [newProduct.cost, newProduct.count])
+		setNewProduct(prev => ({ ...prev, overall: +prev.cost * +prev.count }))
+	}, [newProduct.count, newProduct.cost])
 
-	// Auto-close snackbar after 5s
-	// useEffect(() => {
-	// 	if (snackBarShown)
-	// 		setTimeout(() => setSnackbarShown(false), 5000)
-	// }, [snackBarShown])
+	useEffect(() => {
+		if (cheque?.chequeRows == null) {
+			return
+		}
+		setCheque(prev => ({ ...prev, total: prev.chequeRows.reduce((sum, prod) => sum + +prod.overall, 0) }))
+	}, [cheque?.chequeRows])
 
-	// useEffect(() => {
-	// 	// TODO: CHANGE TOTAL PRICE WHEN ADD NEW PRODUCT
-	// }, [products])
+	function saveChequeInAccount() {
+		setLoading(true)
+		setError('')
+
+		const url = '/api/cheques'
+		api
+			.post(url, { cheque: { ...cheque, url: route.params.url } }, { headers: { Authorization: token } })
+			.then(res => {
+				if (res.status !== 201) throw new Error('Error on save cheque!')
+			})
+			.catch(error => {
+				setError(error.message)
+			})
+			.finally(() => {
+				setLoading(false)
+				setCheque(null)
+				navigation.navigate('AccountStackPage')
+			})
+	}
+
+	function handleConfirmRemove() {
+		setCheque(prev => ({ ...prev, chequeRows: prev.chequeRows.filter(row => row._id !== productIdToRemove) }))
+		setProductIdToRemove(null)
+		setRequestModalVisible(false)
+	}
+
+	function handleCancelRemove() {
+		setProductIdToRemove(null)
+		setRequestModalVisible(false)
+	}
 
 	const s = StyleSheet.create({
 		qrScanEditPage: {
@@ -79,195 +109,216 @@ export const QRScanEditPage = ({ navigation, route }) => {
 		},
 		container: {
 			flex: 1,
+			padding: 16,
+		},
+		cheque: {
+			marginHorizontal: 16,
+
+			borderWidth: 1,
+			borderStyle: 'dashed',
+			borderColor: theme.colors.outline,
+
+			borderRadius: 8,
+		},
+		chequeHeader: {
+			borderTopLeftRadius: 8,
+			borderTopRightRadius: 8,
+		},
+		chequeHeaderButton: {},
+		chequeTitle: {
+			fontSize: 22,
+			lineHeight: 24,
+		},
+
+		chequeRow: {
 			paddingHorizontal: 16,
-			paddingTop: 16,
+			paddingVertical: 12,
 		},
-		product: {
-			marginBottom: 8,
+		chequeRowBorderBottom: {
+			borderStyle: 'dashed',
+			borderBottomWidth: 1,
+			borderColor: theme.colors.outline,
 		},
-		productRow: {
+		chequeRowProductDescription: {
+			color: theme.colors.outline,
+		},
+		productRowBottom: {
 			flexDirection: 'row',
 			justifyContent: 'space-between',
 			alignItems: 'center',
 		},
-
-
-		FAB: {
-			position: 'absolute',
-			right: 16,
-			bottom: 96,
+		chequeRowCost: {
+			textAlign: 'right',
 		},
+		chequeFooter: {
+			backgroundColor: theme.dark ?
+				theme.colors.secondaryContainer :
+				theme.colors.success,
+
+			flex: 1,
+			flexDirection: 'column',
+
+			paddingVertical: 32,
+			paddingHorizontal: 16,
+		},
+		chequeFooterText: {
+			color: theme.colors.onSuccess,
+		},
+		chequeTotal: {
+			fontSize: 48,
+		},
+		qrCodeWrapper: {
+			backgroundColor: theme.colors.background,
+
+			paddingVertical: 16,
+
+			justifyContent: 'center',
+			alignItems: 'center',
+
+			borderBottomLeftRadius: 8,
+			borderBottomRightRadius: 8,
+		},
+
 		modalContent: {
 			backgroundColor: '#fff',
 			marginHorizontal: 32,
-			paddingVertical: 16,
-			paddingHorizontal: 32,
+			paddingTop: 24,
+			paddingBottom: 32,
+			paddingHorizontal: 24,
 		},
 	})
 
-	function removeProduct(id) {
-		setCheck(check => ({ ...check, checkRows: check?.checkRows?.filter(row => row._id !== id) }))
-	}
-
-	function handleChange({ name, value }) {
-		setNewProduct(prev => ({ ...prev, [name]: value }))
-	}
-
-	function submitModal() {
-		setModalShown(false)
-		setCheck(check => ({ ...check, checkRows: [...check?.checkRows, newProduct] }))
-		setNewProduct({
-			name: '',
-			cost: '',
-			count: '1',
-			overall: '0',
-		})
-	}
-
-	function saveCheckInAccount() {
-		setLoading(true)
-		setError('')
-
-		const url = `${BASE_URL}/api/checks`
-
-		axios.post(url, { check }, { headers: { Authorization: token }, })
-			.then(res => {
-				if (res.status !== 201) throw new Error('Error on save check!')
-
-				navigation.navigate('AccountStackPage')
-			})
-			.catch(error => {
-				console.log(error.message)
-				setError(error.message)
-			})
-			.finally(() => {
-				setLoading(false)
-				setCheck(null)
-			})
-	}
-
 	if (loading) return <Loading/>
-	if (error) {
-		return (
-			<View style={{ flex: 1 }}>
-				<Text>{error}</Text>
-			</View>
-		)
-	}
-
-	/*
-	TODO: Check: sometimes product.number/product.count
-	 */
+	if (error) return <ErrorPage
+		message={error}
+		navigation={navigation}
+		onGoHomePress={navigation.popToTop()}
+	/>
+	if (cheque == null) return <NoDataPage
+		message={strings.noInformationFound}
+		onRefreshAction={navigation.popToTop}
+	/>
 	return (
-		<SafeAreaView style={{ flex: 1 }}>
-			<View style={s.qrScanEditPage}>
-				<ScrollView style={{ flex: 1 }}>
-					<View style={s.container}>
+		<View style={s.qrScanEditPage}>
+			<ScrollView style={{ flex: 1 }}>
+				<View style={s.container}>
+					<View style={s.cheque}>
+						<View style={s.chequeHeader}>
+							<Button
+								style={s.chequeHeaderButton}
+								mode={'text'}
+								icon={'link-variant'}
+								labelStyle={s.chequeTitle}
+								contentStyle={{ paddingVertical: 8, flexDirection: 'row-reverse' }}
+								onPress={() => Linking.openURL(cheque?.url || '')}
+							>
+								{strings.cheque}
+							</Button>
+						</View>
 						<View>
+							<View style={s.chequeFooter}>
+								<View>
+									<Text
+										style={[s.chequeTotal, s.chequeFooterText]}
+									>
+										{cheque.total} {strings.currency}
+									</Text>
+								</View>
+								<View>
+									<Text
+										style={[s.chequeFooterText]}
+									>
+										Date: {chequeDate.toDateString()}
+									</Text>
+								</View>
+							</View>
+						</View>
+						<View style={s.chequeBody}>
 							{
-								!check?.checkRows?.length ?
-									<Text>There is no scanned data!</Text> :
-									check?.checkRows?.map(product => (
-										<View key={product?._id} style={s.product}>
-											<View style={s.productRow}>
-												<View>
-													<View>
-														<Text theme={theme}>
-															{product.name}
-														</Text>
-													</View>
-													<View>
-														<Text theme={theme}>
-															{product.cost} x {product.number} = {product.overall}
-														</Text>
-													</View>
-												</View>
-												<View>
-													<IconButton
-														icon={'delete'}
-														onPress={() => removeProduct(product?._id)}
-													/>
-												</View>
+								cheque.chequeRows.map(row => (
+										<View
+											key={row._id || row.name}
+											style={[s.chequeRow, s.chequeRowBorderBottom]}
+										>
+											<View>
+												<Text
+													variant={'bodyMedium'}
+													style={s.chequeRowProductDescription}
+												>
+													Product name
+												</Text>
+												<Text
+													variant={'titleMedium'}
+												>
+													{row.name}
+												</Text>
 											</View>
-											<Divider/>
+											<View
+												style={s.productRowBottom}
+											>
+												<Text
+													style={s.chequeRowCost}
+												>
+													{row.cost} тг x {row.count} =
+												</Text>
+												<Text variant={'bodyLarge'}>
+													{row.overall} тг
+												</Text>
+											</View>
 										</View>
-									))
+									),
+								)
 							}
-							<View>
-								<Text>Date: {check?.date}</Text>
-								<Text>Total: {check?.total}</Text>
-							</View>
-							<View>
-								<Button
-									children={'Ok'}
-									onPress={saveCheckInAccount}
-									mode={'outlined'} theme={theme}
-								/>
-							</View>
+						</View>
+						<View style={s.qrCodeWrapper}>
+							<QRCode
+								backgroundColor={theme.colors.background}
+								color={theme.dark ? theme.colors.onPrimaryContainer : theme.colors.primary}
+								value={cheque.url}
+							/>
 						</View>
 					</View>
-				</ScrollView>
-				<Portal
-					onUnmount={(...args) => {
-						console.log(args)
+				</View>
+			</ScrollView>
+			<Portal>
+				<Modal
+					visible={requestModalVisible}
+					onDismiss={() => {
+						setRequestModalVisible(false)
 					}}
+					contentContainerStyle={s.modalContent}
+					theme={theme}
 				>
-					<FAB icon={'plus'} style={s.FAB} theme={theme} onPress={() => setModalShown(true)}/>
-					<Modal
-						visible={modalShown}
-						onDismiss={() => setModalShown(false)}
-						contentContainerStyle={s.modalContent}
-						theme={theme}
-					>
-						<View>
-							<View>
-								<TextInput
-									theme={theme}
-									value={newProduct.name}
-									onChangeText={name => handleChange({ name: 'name', value: name })}
-									placeholder={'Enter product name'}
-								/>
-								<TextInput
-									theme={theme}
-									value={newProduct.cost}
-									onChangeText={cost => handleChange({ name: 'cost', value: cost })}
-									placeholder={'Cost'} keyboardType={'number-pad'}
-								/>
-								<TextInput
-									theme={theme}
-									value={newProduct.count}
-									onChangeText={count => handleChange({ name: 'count', value: count })}
-									placeholder={'Count'} keyboardType={'number-pad'}
-								/>
-								<TextInput
-									theme={theme}
-									value={newProduct.overall} placeholder={'Overall'}
-									disabled={true} keyboardType={'number-pad'}
-								/>
-							</View>
-							<View>
-								<Button
-									children={'Ok'}
-									onPress={submitModal}
-									mode={'outlined'} theme={theme}
-								/>
-							</View>
+					<View>
+						<Text
+							variant={'titleLarge'}
+							style={{ marginBottom: 16 }}
+						>
+							Remove product from cheque list?
+						</Text>
+						<View style={{
+							flexDirection: 'row',
+							justifyContent: 'space-between',
+						}}>
+							<Button
+								style={{ width: '48%' }}
+								theme={theme}
+								children={'Cancel'}
+								mode={'outlined'}
+								onPress={handleCancelRemove}
+							/>
+							<Button
+								theme={theme}
+								children={'Confirm'}
+								labelStyle={{ color: '#fff' }}
+								style={{ backgroundColor: 'red', width: '48%' }}
+								mode={'contained'}
+								onPress={handleConfirmRemove}
+							/>
 						</View>
-					</Modal>
-					{/*<Snackbar*/}
-					{/*	visible={snackBarShown}*/}
-					{/*	onDismiss={() => setSnackbarShown(false)}*/}
-					{/*	action={{*/}
-					{/*		label: 'Ok',*/}
-					{/*		onPress: () => {*/}
-					{/*			setSnackbarShown(false)*/}
-					{/*		},*/}
-					{/*	}}*/}
-					{/*>*/}
-					{/*	Some text from Snackbar after scan qr edit*/}
-					{/*</Snackbar>*/}
-				</Portal>
-			</View>
-		</SafeAreaView>
+					</View>
+				</Modal>
+			</Portal>
+		</View>
 	)
 }

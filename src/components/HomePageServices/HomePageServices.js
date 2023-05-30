@@ -1,82 +1,79 @@
-import { StyleSheet, View } from 'react-native'
-import { DataTable, IconButton, Text, useTheme } from 'react-native-paper'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { IconButton, Text, useTheme } from 'react-native-paper'
 import { useId } from 'react'
+import { useSelector } from 'react-redux'
 
 export const HomePageServices = ({ navigation, route }) => {
-	const theme = useTheme()
+	const strings = useSelector(state => state.localization.strings)
+
 	const services = [
-		[
-			{
-				id: useId(),
-				icon: 'sale',
-				children: 'Sales',
-				size: 40,
-				onPress: () => {
-					navigation.navigate('SalesPage')
-				},
+		{
+			id: useId(),
+			icon: 'qrcode-scan',
+			children: strings.qrScan,
+			size: 40,
+			onPress: () => {
+				navigation.navigate('QRScannerStackPage', {
+					screen: 'QRScannerPage',
+				})
 			},
-			{
-				id: useId(),
-				icon: 'progress-question',
-				children: 'Feature',
-				size: 40,
-				onPress: () => {
-					console.log('Navigate to new feature')
-				},
+		},
+		{
+			id: useId(),
+			icon: 'chart-line',
+			children: strings.chart,
+			size: 40,
+			onPress: () => {
+				navigation.navigate('HomeStackPage', {
+					screen: 'ChartPage',
+				})
 			},
-			{
-				id: useId(),
-				icon: 'progress-question',
-				children: 'Feature',
-				size: 40,
-				onPress: () => {
-					console.log('Navigate to new feature')
-				},
+		},
+		{
+			id: useId(),
+			icon: 'google-maps',
+			children: strings.map,
+			size: 40,
+			onPress: () => {
+				navigation.navigate('HomeStackPage', {
+					screen: 'MapPage',
+				})
 			},
-		],
-		[
-			{
-				id: useId(),
-				icon: 'progress-question',
-				children: 'Feature',
-				size: 40,
-				onPress: () => {
-					console.log('Navigate to new feature')
-				},
+		},
+		{
+			id: useId(),
+			icon: 'beaker-check',
+			children: strings.cheques,
+			size: 40,
+			onPress: () => {
+				navigation.navigate('AccountStackPage', {
+					screen: 'ChequesPage',
+				})
 			},
-			{
-				id: useId(),
-				icon: 'progress-question',
-				children: 'Feature',
-				size: 40,
-				onPress: () => {
-					console.log('Navigate to new feature')
-				},
-			},
-			{
-				id: useId(),
-				icon: 'progress-question',
-				children: 'Feature',
-				size: 40,
-				onPress: () => {
-					console.log('Navigate to new feature')
-				},
-			},
-		],
+		},
 	]
 
 	const s = StyleSheet.create({
-		borderRight: {
-			borderRightWidth: 1,
+		servicesWrapper: {
+			borderWidth: 0,
 		},
-		dataTable: {
-			marginBottom: 16,
+		services: {
+			width: '100%',
+
+			flexWrap: 'wrap',
+			flexDirection: 'row',
+			justifyContent: 'space-between',
+			alignItems: 'center',
 		},
-		serviceCell: {
+		service: {
+			// width: '25%',
+
 			flex: 1,
 			justifyContent: 'center',
 			alignItems: 'center',
-			paddingBottom: 8,
+
+			paddingTop: 8,
+			paddingBottom: 16,
 		},
 		serviceCellText: {
 			textAlign: 'center',
@@ -84,36 +81,27 @@ export const HomePageServices = ({ navigation, route }) => {
 	})
 
 	return (
-		<View>
-			<DataTable style={s.dataTable}>
+		<View style={s.servicesWrapper}>
+			<View style={s.services}>
 				{
-					services.map(row => (
-						<DataTable.Row
-							borderless={true}
-							theme={theme}
+					services.map(service => (
+						<TouchableOpacity
+							key={service.id}
+							style={s.service}
+							onPress={service.onPress}
 						>
-							{
-								row.map(cell => (
-									<DataTable.Cell
-										key={cell.id}
-										style={s.serviceCell}
-										onPress={cell.onPress}
-									>
-										<View>
-											<IconButton
-												icon={cell.icon}
-												children={cell.children}
-												size={cell.size}
-											/>
-											<Text style={s.serviceCellText}>{cell.children}</Text>
-										</View>
-									</DataTable.Cell>
-								))
-							}
-						</DataTable.Row>
+							<View style={s.tableCellView}>
+								<IconButton
+									icon={service.icon}
+									children={service.children}
+									size={service.size}
+								/>
+								<Text style={s.serviceCellText}>{service.children}</Text>
+							</View>
+						</TouchableOpacity>
 					))
 				}
-			</DataTable>
+			</View>
 		</View>
 	)
 }
